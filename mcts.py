@@ -123,6 +123,57 @@ class MCTS(object):
         probs /= np.sum(probs)
         return probs
 
+# 基于MCTS的AI Player
+class MCTSPlayer(object):
+    def __init__(self, policy_value_function,
+                 c_puct=5, n_playout=2000, is_selfplay=0):
+        # 使用MCTS进行搜索
+        self.mcts = MCTS(policy_value_function, c_puct, n_playout)
+        self._is_selfplay = is_selfplay
+        
+    # 设置player index
+    def set_player_ind(self, p):
+        self.player = p
+
+    # 重置MCTS树
+    def reset_player(self):
+        self.mcts.update_with_move(-1)
+        
+    # 获取AI下棋的位置
+    def get_action(self, board, temp=1e-3, return_prob=0):
+        # 获取所有可能的下棋位置
+        sensible_moves = board.availables
+        # MCTS返回的pi向量，基于alphaGo Zero论文
+        move_probs = np.zeros(board.width*board.height)
+        if len(sensible_moves) > 0:
+            acts, probs = self.mcts.get_move_probs(board, temp)
+            move_probs[list(acts)] = probs
+            if self._is_selfplay:
+                # 为探索添加Dirichlet噪声(需要进行自我训练)
+                move = np.random.choice(
+                    acts,
+                    p=0.75*probs + 0.25*np.random.dirichlet(0.3*np.ones(len(probs)))
+                )
+                # 更新根节点，重新使用搜索树
+                self.mcts.update_with_move(move)
+            else:
+                # 默认temp=1e-3, 几乎等同于选择概率最大的那一步
+                move = np.random.choice(acts, p=probs)
+                # 重置根节点 reset the root node
+                self.mcts.update_with_move(-1)
+#                location = board.move_to_location(move)
+#                print("AI move: %d,%d\n" % (location[0], location[1]))
+
+            if return_prob:
+                return move, move_probs
+            else:
+                return move
+        else:
+            print("WARNING: the board is full")
+
+    def __str__(self):
+        return "MCTS {}".format(self.player)
+
 
 def scheduling(resource_needed):
     rules = pickle.load('')
