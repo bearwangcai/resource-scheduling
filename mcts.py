@@ -86,11 +86,15 @@ class MCTS(object):
             if not end:
                 node.expand(action_probs)
             else:
-                # 游戏结束，计算leaf_value
-                if winner == -1:  # 平均
-                    leaf_value = 0.0
-                else:
-                    leaf_value = (1.0 if winner == state.get_current_player() else -1.0)
+                '''
+                记得要做资源查验 即node_resource_now满足资源请求的才可以被调度
+                '''
+                leaf_value = np.sum(state.weight() * np.square(state.now() - state.all()) / np.square(state.all())) / state.weight()
+                '''
+                state.weight() 每一项资源的权重系数，是一个array
+                state.now()    每一项资源的现有量，是一个array
+                state.all()    每一项资源的原始存量，是一个array
+                '''
 
             # 将子节点的评估值反向传播更新父节点(所有)
             node.update_recursive(-leaf_value)

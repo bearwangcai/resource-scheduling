@@ -1,39 +1,110 @@
 import numpy as np 
 import mcts
+from copy import deepcopy
 
 class node:
     def __init__(self, resource_origin):
         '''
         资源是一个字典，例如:
-        {cpu:15, memory:10, gpu:1}
+        {'cpu':15, 'memory':10, 'gpu':1}
         '''
-        self.resource_origin = resource_origin 
+        self.node_resource_origin = resource_origin
+        self.node_resource_now = deepcopy(self.node_resource_origin)
+
+    def get_node_resource_origin(self):
+        return self.node_resource_origin
+
+    def get_node_resource_now(self):
+        return self.node_resource_now
+
+    def node_resource_expend(self, job):
+        '''
+        job:资源消耗请求,形如：{'cpu':15, 'memory':10, 'gpu':1}
+        '''
+        for key in job.keys():
+            try:
+                self.node_resource_now[key] -= job[key]
+            except:
+                print('无此资源')
+
+    def node_resource_release(self, job_end):
+        '''
+        job_end:被释放的资源,形如：{'cpu':15, 'memory':10, 'gpu':1}
+        '''
+        for key in job_end.keys():
+            try:
+                self.node_resource_now[key] += job_end[key]
+            except:
+                print('无此资源')
 
 class state:
     def __init__(self, resource):
-        self.resource_origin = resource #原始资源是一个字典，每一个key就是node的名字
+        self.state_resource_origin = resource #原始资源是一个字典，每一个key就是node的名字
+        self.state_resource_now = deepcopy(self.state_resource_origin) #现有资源
         self.n_node = len(resource.keys())
         self.state_log = []
+
+    def get_state_resource_origin(self):
+        '''
+        返回资源总数
+        '''
+        return self.state_resource_origin
+
+    def get_state_resource_now(self):
+        '''
+        返回现有资源数
+        '''
+        return self.state_resource_now
+
+    def calculate_resource(self,resource,whose):
+        '''
+        计算资源总数
+        '''
+        resources_all = {}
+        for node_value in resource.values():
+            #node_values:node({'cpu':15, 'memory':10, 'gpu':1})
+            if whose == 'all':
+                node_resource = node_value.get_node_resource_origin()
+            else:
+                node_resource = node_value.get_node_resource_now()
+            for resource_key in node_resource.keys():
+                if resource_key in resources_all.keys():
+                    resources_all[resource_key] += node_resource[resource_key]
+                else:
+                    resources_all[resource_key] = node_resource[resource_key]
+
+        return resources_all
+
+    def all(self): #总资源数，即原始资源数
+        resources_all = self.calculate_resource(self.state_resource_origin, 'all')
+        return resources_all
+
+    def now(self):  #现有资源数
+        resources_now = self.calculate_resource(self.state_resource_now, 'now')
+        return resources_now
 
     def job(self, resource_needed):
         '''
         接收新的任务
         '''
-        self.resource_needed = resource_needed #一组资源消耗字典，形如：{cpu:15, memory:10, gpu:1}
-
+        self.resource_needed = resource_needed  # 一组资源消耗字典，形如：{'cpu':15, 'memory':10, 'gpu':1}
+    
+    
+    
     def scheduling(self):
         '''
         执行调度
         '''
         node_name = mcts.scheduling(self.resource_needed)#返回是调度到的节点名称
+        #node_name = 'node1'
+        
+        self.state_resource_now[node_name].node_resource_expend(
+            self.resource_needed)  # 状态更新
 
-        for i in self.resource_origin[node_name].keys():
-            self.resource_origin[node_name][i] -= self.resource_needed[i]#状态更新
-
-        self.state_log.append(self.resource_origin)
+        self.state_log.append(deepcopy(self.state_resource_now))
 
         return node_name
-
+    
 
     def show(self):
         pass
@@ -47,12 +118,20 @@ def main():
 
     node_list = {'node1':node1, 'node2':node2, 'node3':node3}
 
-    jobs = [{},{}]
+    jobs = [{'cpu': 5, 'memory': 2, 'gpu': 1}, {'cpu': 5, 'memory': 2, 'gpu': 0}]
 
     state1 = state(node_list)
+    resources_origin_all = state1.all()
+    resources_origin_now = state1.now()
 
+
+    
     for job in jobs:
         state1.job(job)
         state1.scheduling()
+        resources_origin_all = state1.all()
+        resources_origin_now = state1.now()
+    
     state1.show()
     
+main()
