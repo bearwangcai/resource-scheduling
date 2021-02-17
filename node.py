@@ -38,11 +38,20 @@ class node:
                 print('无此资源')
 
 class state:
-    def __init__(self, resource):
+    def __init__(self, resource, resource_weight = None):
         self.state_resource_origin = resource #原始资源是一个字典，每一个key就是node的名字
         self.state_resource_now = deepcopy(self.state_resource_origin) #现有资源
-        self.n_node = len(resource.keys())
+        self.state_resource_name = self.state_resource_origin[self.state_resource_origin.keys()[
+            0]].keys()
+        # 资源权重,形如{'cpu':0.3, 'memory':0.2, 'gpu':0.5}
+        self.n_node = len(resource.keys()) #节点个数
         self.state_log = []
+        if resource_weight == None:
+            self.resource_weight = {}
+            for key in self.state_resource_name:
+                self.resource_weight[key] = 1
+        else:
+            self.resource_weight = resource_weight
 
     def get_state_resource_origin(self):
         '''
@@ -83,19 +92,40 @@ class state:
         resources_now = self.calculate_resource(self.state_resource_now, 'now')
         return resources_now
 
+    def weight(self): #返回资源权重
+        return self.resource_weight
+
     def job(self, resource_needed):
         '''
         接收新的任务
         '''
         self.resource_needed = resource_needed  # 一组资源消耗字典，形如：{'cpu':15, 'memory':10, 'gpu':1}
+
+    def get_job(self):
+        return self.resource_needed
+
+    def get_avaliable(self):
+        node_keys = []
+        for node_key in self.state_resource_now.keys():
+            flag = 1
+            for resource_key in self.state_resource_name:
+                if self.state_resource_now[node_key][resource_key] < self.resource_needed[resource_key]:
+                    flag = 0
+                    break
+            if flag:
+                node_keys.append(node_key)
+        return node_keys
+
+    def game_end(self):
+        node_keys = self.get_avaliable()
+        return True if node_keys==[] else False
     
     
-    
-    def scheduling(self):
+    def scheduling(self, action):
         '''
         执行调度
         '''
-        node_name = mcts.scheduling(self.resource_needed)#返回是调度到的节点名称
+        node_name = action#返回是调度到的节点名称
         #node_name = 'node1'
         
         self.state_resource_now[node_name].node_resource_expend(
@@ -116,11 +146,11 @@ def main():
     node2 = node({'cpu':15, 'memory':10, 'gpu':1})
     node3 = node({'cpu':15, 'memory':10, 'gpu':1})
 
-    node_list = {'node1':node1, 'node2':node2, 'node3':node3}
+    node_dict = {'node1':node1, 'node2':node2, 'node3':node3}
 
     jobs = [{'cpu': 5, 'memory': 2, 'gpu': 1}, {'cpu': 5, 'memory': 2, 'gpu': 0}]
 
-    state1 = state(node_list)
+    state1 = state(node_dict)
     resources_origin_all = state1.all()
     resources_origin_now = state1.now()
 
@@ -128,7 +158,8 @@ def main():
     
     for job in jobs:
         state1.job(job)
-        state1.scheduling()
+        action = 'node1'
+        state1.scheduling(action)
         resources_origin_all = state1.all()
         resources_origin_now = state1.now()
     

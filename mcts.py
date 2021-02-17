@@ -2,6 +2,23 @@ import numpy as np
 import copy
 import pickle
 
+# 快速走子策略：随机走子
+
+
+def rollout_policy_fn(state):
+    state_avaliable = state.get_avaliable()
+    # 随机走，从棋盘中可以下棋的位置中随机选一个
+    action_probs = np.random.rand(len(state_avaliable))
+    return zip(state_avaliable, action_probs)
+
+
+# policy_value_fn 考虑了棋盘状态，输出一组(action, probability)和分数[-1,1]之间
+def policy_value_fn(state):
+    # 对于pure MCTS来说，返回统一的概率，得分score为0
+    state_avaliable = state.get_avaliable()
+    action_probs = np.ones(len(state_avaliable)) / len(state_avaliable)
+    return zip(state_avaliable, action_probs), 0
+
 # MCTS树节点，每个节点都记录了自己的Q值，先验概率P和 UCT值第二项，即调整后的访问次数u（用于exploration）
 class TreeNode(object):
     # 节点初始化
@@ -71,29 +88,46 @@ class MCTS(object):
     def _playout(self, state):
         # 设置当前节点
         node = self._root
+        # 统计资源都有什么
+        state_resource_all = state.all()
+        state_all_resource_name = state_resource_all.keys() #资源名称，应该是个list
         # 必须要走到叶子节点
         while(1):
             if node.is_leaf():
                 break
             # 基于贪心算法 选择下一步
             action, node = node.select(self._c_puct)
+            # action 被选择的节点，是一个string
             state.do_move(action)
 
             # 对于current player，根据state 得到一组(action, probability) 和分数v [-1,1]之间（比赛结束时的预期结果）
             action_probs, leaf_value = self._policy(state)
             # 检查游戏是否结束
-            end, winner = state.game_end()
+            end = state.game_end()
             if not end:
                 node.expand(action_probs)
             else:
                 '''
                 记得要做资源查验 即node_resource_now满足资源请求的才可以被调度
                 '''
-                leaf_value = np.sum(state.weight() * np.square(state.now() - state.all()) / np.square(state.all())) / state.weight()
+
+                state_weight = []
+                state_now = []
+                state_all = []
+                for name in state_all_resource_name:
+                    state_weight.append(state.weight()[name])
+                    state_now.append(state.now()[name])
+                    state_all.append(state.all()[name])
+                state_weight = np.array(state_weight)
+                state_now = np.array(state_now)
+                state_all = np.array(state_all)
+
+                leaf_value = np.sum(state_weight * np.square(state_now -
+                                                             state_all) / np.square(state_all)) / state_weight
                 '''
-                state.weight() 每一项资源的权重系数，是一个array
-                state.now()    每一项资源的现有量，是一个array
-                state.all()    每一项资源的原始存量，是一个array
+                state_weight 每一项资源的权重系数，是一个array
+                state_now    每一项资源的现有量，是一个array
+                state_all    每一项资源的原始存量，是一个array
                 '''
 
             # 将子节点的评估值反向传播更新父节点(所有)
@@ -146,7 +180,7 @@ class MCTSPlayer(object):
     # 获取AI下棋的位置
     def get_action(self, board, temp=1e-3, return_prob=0):
         # 获取所有可能的下棋位置
-        sensible_moves = board.availables
+        sensible_moves = board.get_avaliable()
         # MCTS返回的pi向量，基于alphaGo Zero论文
         move_probs = np.zeros(board.width*board.height)
         if len(sensible_moves) > 0:
