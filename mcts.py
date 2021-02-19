@@ -1,9 +1,17 @@
 import numpy as np
 import copy
 import pickle
+import random
 
 # 快速走子策略：随机走子
 
+
+def random_job(state):
+    state_resource_names = state.get_state_resource_name()
+    job = {}
+    for resource_name in state_resource_names:
+        job[resource_name] = random.randint(0,10)
+    return job
 
 def rollout_policy_fn(state):
     state_avaliable = state.get_avaliable()
@@ -18,6 +26,33 @@ def policy_value_fn(state):
     state_avaliable = state.get_avaliable()
     action_probs = np.ones(len(state_avaliable)) / len(state_avaliable)
     return zip(state_avaliable, action_probs), 0
+
+def node_select_value(state):
+    jobs = random_job
+    state.job(jobs)
+    state_avaliable = state.get_avaliable() #可选节点
+    resource_needed = state.get_job() #资源需求
+    action_probs = [] #选择概率
+    state_weight = []
+    state_now = []
+    state_all = []
+    for node_name in state_avaliable:
+    #node_values:node({'cpu':15, 'memory':10, 'gpu':1})
+        node_value = state[node_name]
+        node_resource_origin = node_value.get_node_resource_origin()
+        node_resource_now = node_value.get_node_resource_now()
+        for name in resource_needed.keys():
+            state_weight.append(state.weight()[name])
+            state_now.append(node_resource_now[name])
+            state_all.append(node_resource_origin[name])
+        state_weight = np.array(state_weight)
+        state_now = np.array(state_now)
+        state_all = np.array(state_all)
+
+        prob = 1-(np.sum(state_weight * np.square(state_now - state_all) / np.square(state_all)) / np.sum(state_weight))
+        action_probs.append(prob)
+        return zip(state_avaliable, prob), 0
+
 
 # MCTS树节点，每个节点都记录了自己的Q值，先验概率P和 UCT值第二项，即调整后的访问次数u（用于exploration）
 class TreeNode(object):
@@ -55,7 +90,7 @@ class TreeNode(object):
     def update_recursive(self, leaf_value):
         # 如果不是根节点，就需要先调用父亲节点的更新
         if self._parent:
-            self._parent.update_recursive(-leaf_value)
+            self._parent.update_recursive(leaf_value)
         self.update(leaf_value)
 
     # 计算节点价值 UCT值 = Q值 + 调整后的访问次数（exploitation + exploration）
@@ -98,7 +133,7 @@ class MCTS(object):
             # 基于贪心算法 选择下一步
             action, node = node.select(self._c_puct)
             # action 被选择的节点，是一个string
-            state.do_move(action)
+            state.scheduling(action)
 
             # 对于current player，根据state 得到一组(action, probability) 和分数v [-1,1]之间（比赛结束时的预期结果）
             action_probs, leaf_value = self._policy(state)
@@ -122,8 +157,8 @@ class MCTS(object):
                 state_now = np.array(state_now)
                 state_all = np.array(state_all)
 
-                leaf_value = np.sum(state_weight * np.square(state_now -
-                                                             state_all) / np.square(state_all)) / state_weight
+                leaf_value = 1-(np.sum(state_weight * np.square(state_now -
+                                                             state_all) / np.square(state_all)) / np.sum(state_weight))
                 '''
                 state_weight 每一项资源的权重系数，是一个array
                 state_now    每一项资源的现有量，是一个array
@@ -131,14 +166,21 @@ class MCTS(object):
                 '''
 
             # 将子节点的评估值反向传播更新父节点(所有)
-            node.update_recursive(-leaf_value)
+            node.update_recursive(leaf_value)
 
+    def random_job(self, state):
+        state_resource_names = state.get_state_resource_name()
+        job = {}
+        for resource_name in state_resource_names:
+            job[resource_name] = random.randint(0,10)
+        return job
 
     def get_move_probs(self, state, temp=1e-3):
         # 运行_n_playout次 _playout
         for n in range(self._n_playout):
             # 在进行_playout之前需要保存当前状态的副本，因为状态是就地修改的
             state_copy = copy.deepcopy(state)
+            state_copy.job(self.random_job(state_copy))
             self._playout(state_copy)
 
         # 基于节点的访问次数，计算move probabilities
@@ -177,14 +219,24 @@ class MCTSPlayer(object):
     def reset_player(self):
         self.mcts.update_with_move(-1)
         
-    # 获取AI下棋的位置
-    def get_action(self, board, temp=1e-3, return_prob=0):
+
+
+    def random_job(self, state):
+        state_resource_names = state.get_state_resource_name()
+        job = {}
+        for resource_name in state_resource_names:
+            job[resource_name] = random.randint(0,10)
+        return job
+
+    '''
+    def get_action(self, state, temp=1e-3, return_prob=0):
         # 获取所有可能的下棋位置
-        sensible_moves = board.get_avaliable()
+        state.job(self.random_job(state))
+        sensible_moves = state.get_avaliable()
         # MCTS返回的pi向量，基于alphaGo Zero论文
-        move_probs = np.zeros(board.width*board.height)
+        move_probs = np.zeros(len(sensible_moves))
         if len(sensible_moves) > 0:
-            acts, probs = self.mcts.get_move_probs(board, temp)
+            acts, probs = self.mcts.get_move_probs(state, temp)
             move_probs[list(acts)] = probs
             if self._is_selfplay:
                 # 为探索添加Dirichlet噪声(需要进行自我训练)
@@ -206,6 +258,15 @@ class MCTSPlayer(object):
                 return move, move_probs
             else:
                 return move
+        else:
+            print("WARNING: the board is full")
+    '''
+    def get_action(self, board):
+        sensible_moves = board.availables
+        if len(sensible_moves) > 0:
+            action, probs = self.mcts.get_move_probs(board)
+            self.mcts.update_with_move(-1)
+            return action
         else:
             print("WARNING: the board is full")
 

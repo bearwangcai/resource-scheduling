@@ -17,7 +17,7 @@ class node:
     def get_node_resource_now(self):
         return self.node_resource_now
 
-    def node_resource_expend(self, job):
+    def node_resource_consume(self, job):
         '''
         job:资源消耗请求,形如：{'cpu':15, 'memory':10, 'gpu':1}
         '''
@@ -53,6 +53,13 @@ class state:
         else:
             self.resource_weight = resource_weight
 
+    def get_state_resource_name(self):
+        '''
+        返回资源名称
+        '''
+        return self.state_resource_name
+
+        
     def get_state_resource_origin(self):
         '''
         返回资源总数
@@ -128,7 +135,7 @@ class state:
         node_name = action#返回是调度到的节点名称
         #node_name = 'node1'
         
-        self.state_resource_now[node_name].node_resource_expend(
+        self.state_resource_now[node_name].node_resource_consume(
             self.resource_needed)  # 状态更新
 
         self.state_log.append(deepcopy(self.state_resource_now))
