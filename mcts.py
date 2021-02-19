@@ -136,37 +136,37 @@ class MCTS(object):
             state.scheduling(action)
 
             # 对于current player，根据state 得到一组(action, probability) 和分数v [-1,1]之间（比赛结束时的预期结果）
-            action_probs, leaf_value = self._policy(state)
-            # 检查游戏是否结束
-            end = state.game_end()
-            if not end:
-                node.expand(action_probs)
-            else:
-                '''
-                记得要做资源查验 即node_resource_now满足资源请求的才可以被调度
-                '''
+        action_probs, leaf_value = self._policy(state)
+        # 检查游戏是否结束
+        end = state.game_end()
+        if not end:
+            node.expand(action_probs)
+        else:
+            '''
+            记得要做资源查验 即node_resource_now满足资源请求的才可以被调度
+            '''
 
-                state_weight = []
-                state_now = []
-                state_all = []
-                for name in state_all_resource_name:
-                    state_weight.append(state.weight()[name])
-                    state_now.append(state.now()[name])
-                    state_all.append(state.all()[name])
-                state_weight = np.array(state_weight)
-                state_now = np.array(state_now)
-                state_all = np.array(state_all)
+            state_weight = []
+            state_now = []
+            state_all = []
+            for name in state_all_resource_name:
+                state_weight.append(state.weight()[name])
+                state_now.append(state.now()[name])
+                state_all.append(state.all()[name])
+            state_weight = np.array(state_weight)
+            state_now = np.array(state_now)
+            state_all = np.array(state_all)
 
-                leaf_value = 1-(np.sum(state_weight * np.square(state_now -
-                                                             state_all) / np.square(state_all)) / np.sum(state_weight))
-                '''
-                state_weight 每一项资源的权重系数，是一个array
-                state_now    每一项资源的现有量，是一个array
-                state_all    每一项资源的原始存量，是一个array
-                '''
+            leaf_value = 1-(np.sum(state_weight * np.square(state_now -
+                                                            state_all) / np.square(state_all)) / np.sum(state_weight))
+            '''
+            state_weight 每一项资源的权重系数，是一个array
+            state_now    每一项资源的现有量，是一个array
+            state_all    每一项资源的原始存量，是一个array
+            '''
 
-            # 将子节点的评估值反向传播更新父节点(所有)
-            node.update_recursive(leaf_value)
+        # 将子节点的评估值反向传播更新父节点(所有)
+        node.update_recursive(leaf_value)
 
     def random_job(self, state):
         state_resource_names = state.get_state_resource_name()
