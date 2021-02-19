@@ -41,8 +41,8 @@ class state:
     def __init__(self, resource, resource_weight = None):
         self.state_resource_origin = resource #原始资源是一个字典，每一个key就是node的名字
         self.state_resource_now = deepcopy(self.state_resource_origin) #现有资源
-        self.state_resource_name = self.state_resource_origin[self.state_resource_origin.keys()[
-            0]].keys()
+        self.state_resource_name = list(self.state_resource_origin[list(self.state_resource_origin.keys())[
+            0]].get_node_resource_origin().keys())
         # 资源权重,形如{'cpu':0.3, 'memory':0.2, 'gpu':0.5}
         self.n_node = len(resource.keys()) #节点个数
         self.state_log = []
@@ -116,7 +116,7 @@ class state:
         for node_key in self.state_resource_now.keys():
             flag = 1
             for resource_key in self.state_resource_name:
-                if self.state_resource_now[node_key][resource_key] < self.resource_needed[resource_key]:
+                if self.state_resource_now[node_key].get_node_resource_now()[resource_key] < self.resource_needed[resource_key]:
                     flag = 0
                     break
             if flag:

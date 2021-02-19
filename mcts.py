@@ -180,7 +180,7 @@ class MCTS(object):
         for n in range(self._n_playout):
             # 在进行_playout之前需要保存当前状态的副本，因为状态是就地修改的
             state_copy = copy.deepcopy(state)
-            state_copy.job(self.random_job(state_copy))
+            #state_copy.job(self.random_job(state_copy))
             self._playout(state_copy)
 
         # 基于节点的访问次数，计算move probabilities
@@ -205,7 +205,7 @@ class MCTS(object):
 
 # 基于MCTS的AI Player
 class MCTSPlayer(object):
-    def __init__(self, policy_value_function,
+    def __init__(self, policy_value_function = node_select_value,
                  c_puct=5, n_playout=2000, is_selfplay=0):
         # 使用MCTS进行搜索
         self.mcts = MCTS(policy_value_function, c_puct, n_playout)
@@ -262,7 +262,7 @@ class MCTSPlayer(object):
             print("WARNING: the board is full")
     '''
     def get_action(self, board):
-        sensible_moves = board.availables
+        sensible_moves = board.get_avaliable()
         if len(sensible_moves) > 0:
             action, probs = self.mcts.get_move_probs(board)
             self.mcts.update_with_move(-1)
