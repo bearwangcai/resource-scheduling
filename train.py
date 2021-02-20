@@ -13,9 +13,9 @@ from node import node
 class TrainPipeline():
     def __init__(self, init_model=None):
         # 设置棋盘和游戏的参数
-        self.node1 = node({'cpu':15, 'memory':10, 'gpu':10})
-        self.node2 = node({'cpu':15, 'memory':10, 'gpu':10})
-        self.node3 = node({'cpu':15, 'memory':10, 'gpu':10})
+        self.node1 = node({'cpu':1500, 'memory':1000, 'gpu':100})
+        self.node2 = node({'cpu':1500, 'memory':1000, 'gpu':100})
+        self.node3 = node({'cpu':150, 'memory':1000, 'gpu':1000})
         self.node_dict = {'node1':self.node1, 'node2':self.node2, 'node3':self.node3}
         self.jobs = [{'cpu': 5, 'memory': 2, 'gpu': 1}, {'cpu': 5, 'memory': 2, 'gpu': 0}]
         self.state = State(self.node_dict)

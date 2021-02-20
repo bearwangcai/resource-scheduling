@@ -24,6 +24,7 @@ class Game(object):
         self.state = State(self.node_dict)
         # 记录该局对应的数据：states, mcts_probs, current_players
         moves, jobs, states, mcts_probs = [], [], [], []
+        n = 1
         # 一直循环到比赛结束
         while True:
             # 得到player的下棋位置
@@ -49,6 +50,10 @@ class Game(object):
             if is_shown:
                 pass
             # 判断游戏是否结束end，统计获胜方 winner
+            print('第%d次实验:'%n)
+            print('job: ', jobs[-1])
+            print('move: ',move)
+            n += 1
 
     def get_algorithm_credit(self, state):
         state_resource_all = state.all()
