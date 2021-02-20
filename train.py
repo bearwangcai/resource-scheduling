@@ -13,9 +13,9 @@ from node import node
 class TrainPipeline():
     def __init__(self, init_model=None):
         # 设置棋盘和游戏的参数
-        self.node1 = node({'cpu':15, 'memory':10, 'gpu':1})
-        self.node2 = node({'cpu':15, 'memory':10, 'gpu':1})
-        self.node3 = node({'cpu':15, 'memory':10, 'gpu':1})
+        self.node1 = node({'cpu':15, 'memory':10, 'gpu':10})
+        self.node2 = node({'cpu':15, 'memory':10, 'gpu':10})
+        self.node3 = node({'cpu':15, 'memory':10, 'gpu':10})
         self.node_dict = {'node1':self.node1, 'node2':self.node2, 'node3':self.node3}
         self.jobs = [{'cpu': 5, 'memory': 2, 'gpu': 1}, {'cpu': 5, 'memory': 2, 'gpu': 0}]
         self.state = State(self.node_dict)
@@ -47,12 +47,12 @@ class TrainPipeline():
     def collect_selfplay_data(self, n_games=1):
         for i in range(n_games):
             # 与MCTS Player进行对弈
-            play_result, play_data  = self.game.start_self_play(self.mcts_player, temp=self.temp)
-            play_data = list(play_data)[:]
+            moves, jobs, credit  = self.game.start_self_play(self.mcts_player, temp=self.temp)
+            play_data = list(moves)[:]
             # 保存下了多少步
             self.episode_len = len(play_data)
             # 增加数据 play_data
-            self.data_buffer.extend(play_result)
+            self.data_buffer.extend(moves)
             
 
     def run(self):

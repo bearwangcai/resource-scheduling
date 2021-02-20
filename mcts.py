@@ -28,30 +28,35 @@ def policy_value_fn(state):
     return zip(state_avaliable, action_probs), 0
 
 def node_select_value(state):
-    jobs = random_job
-    state.job(jobs)
+    #jobs = random_job(state)
+    #state.job(jobs)
+    jobs = state.get_job()
     state_avaliable = state.get_avaliable() #可选节点
     resource_needed = state.get_job() #资源需求
     action_probs = [] #选择概率
-    state_weight = []
-    state_now = []
-    state_all = []
+
+    if state_avaliable == [] :
+        return None, 0
+
     for node_name in state_avaliable:
     #node_values:node({'cpu':15, 'memory':10, 'gpu':1})
-        node_value = state[node_name]
-        node_resource_origin = node_value.get_node_resource_origin()
+        state_weight = []
+        node_job = []
+        node_now = []
+        node_value = state.get_state_resource_now()[node_name]
         node_resource_now = node_value.get_node_resource_now()
         for name in resource_needed.keys():
             state_weight.append(state.weight()[name])
-            state_now.append(node_resource_now[name])
-            state_all.append(node_resource_origin[name])
+            node_now.append(node_resource_now[name])
+            node_job.append(jobs[name])
         state_weight = np.array(state_weight)
-        state_now = np.array(state_now)
-        state_all = np.array(state_all)
+        node_job = np.array(node_job)
+        node_now = np.array(node_now)
 
-        prob = 1-(np.sum(state_weight * np.square(state_now - state_all) / np.square(state_all)) / np.sum(state_weight))
+        #prob = 1-(np.sum(state_weight * np.square(node_job - node_now) / np.square(node_now)) / np.sum(state_weight)) 节点执行完任务后省的越少越好
+        prob = (np.sum(state_weight * np.square(node_job - node_now) / np.square(node_now)) / np.sum(state_weight)) #节点执行完任务后省的越多越好
         action_probs.append(prob)
-        return zip(state_avaliable, prob), 0
+    return zip(state_avaliable, action_probs), 0
 
 
 # MCTS树节点，每个节点都记录了自己的Q值，先验概率P和 UCT值第二项，即调整后的访问次数u（用于exploration）
@@ -127,13 +132,22 @@ class MCTS(object):
         state_resource_all = state.all()
         state_all_resource_name = state_resource_all.keys() #资源名称，应该是个list
         # 必须要走到叶子节点
+        n=0
         while(1):
             if node.is_leaf():
                 break
+            if n==0 :
             # 基于贪心算法 选择下一步
-            action, node = node.select(self._c_puct)
-            # action 被选择的节点，是一个string
-            state.scheduling(action)
+                action, node = node.select(self._c_puct)
+                # action 被选择的节点，是一个string
+                state.scheduling(action)
+                n+=1
+            else:
+                state.job(random_job(state))
+                action, node = node.select(self._c_puct)
+                # action 被选择的节点，是一个string
+                state.scheduling(action)
+                n+=1
 
             # 对于current player，根据state 得到一组(action, probability) 和分数v [-1,1]之间（比赛结束时的预期结果）
         action_probs, leaf_value = self._policy(state)
@@ -261,14 +275,15 @@ class MCTSPlayer(object):
         else:
             print("WARNING: the board is full")
     '''
-    def get_action(self, board):
-        sensible_moves = board.get_avaliable()
+    def get_action(self, state):
+        sensible_moves = state.get_avaliable()
         if len(sensible_moves) > 0:
-            action, probs = self.mcts.get_move_probs(board)
+            actions, probs = self.mcts.get_move_probs(state)
             self.mcts.update_with_move(-1)
-            return action
+            action = actions[np.argmax(probs)]
+            return action, probs
         else:
-            print("WARNING: the board is full")
+            print("WARNING: the state is full")
 
     def __str__(self):
         return "MCTS {}".format(self.player)
