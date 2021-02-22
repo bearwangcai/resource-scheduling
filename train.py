@@ -13,10 +13,11 @@ from node import node
 class TrainPipeline():
     def __init__(self, init_model=None):
         # 设置棋盘和游戏的参数
-        self.node1 = node({'cpu':1500, 'memory':1000, 'gpu':100})
-        self.node2 = node({'cpu':1500, 'memory':1000, 'gpu':100})
-        self.node3 = node({'cpu':150, 'memory':1000, 'gpu':1000})
+        self.node1 = node({'cpu':150, 'memory':100, 'gpu':5})
+        self.node2 = node({'cpu':150, 'memory':100, 'gpu':5})
+        self.node3 = node({'cpu':150, 'memory':100, 'gpu':100})
         self.node_dict = {'node1':self.node1, 'node2':self.node2, 'node3':self.node3}
+        self.weight = {'cpu':0.3, 'memory':0.2, 'gpu':0.5}
         self.jobs = [{'cpu': 5, 'memory': 2, 'gpu': 1}, {'cpu': 5, 'memory': 2, 'gpu': 0}]
         self.state = State(self.node_dict)
         self.game = Game(self.jobs, self.node_dict)
@@ -47,12 +48,20 @@ class TrainPipeline():
     def collect_selfplay_data(self, n_games=1):
         for i in range(n_games):
             # 与MCTS Player进行对弈
-            moves, jobs, credit  = self.game.start_self_play(self.mcts_player, temp=self.temp)
-            play_data = list(moves)[:]
-            # 保存下了多少步
-            self.episode_len = len(play_data)
+            jobs, moves1, moves2, credit1, credit2, resourse_last1, resourse_last2  = self.game.start_self_play(self.mcts_player, temp=self.temp)
+            job_dealed_by_algorithm = len(moves1)
+            job_dealed_by_trandition = len(moves2)
+            a_win_t_by_job = job_dealed_by_algorithm - job_dealed_by_trandition
+            a_win_t_by_credit = credit1 - credit2
+            print('i: ', i)
+            print('job_dealed_by_algorithm: ', job_dealed_by_algorithm)
+            print('job_dealed_by_trandition: ', job_dealed_by_trandition)
+            print('resourse_last1: ', resourse_last1)
+            print('resourse_last2: ', resourse_last2)
+            print('a_win_t_by_job: ', a_win_t_by_job)
+            print('a_win_t_by_credit: ', a_win_t_by_credit)
             # 增加数据 play_data
-            self.data_buffer.extend(moves)
+            self.data_buffer.extend(moves1)
             
 
     def run(self):

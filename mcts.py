@@ -10,7 +10,12 @@ def random_job(state):
     state_resource_names = state.get_state_resource_name()
     job = {}
     for resource_name in state_resource_names:
-        job[resource_name] = random.randint(0,10)
+        if resource_name != 'gpu':
+            job[resource_name] = random.randint(10,15)
+        else:
+            job[resource_name] = random.randint(0,1)
+    if np.random.random() < 0.1:
+        job['gpu'] += random.randint(5,8)
     return job
 
 def rollout_policy_fn(state):
@@ -79,8 +84,16 @@ class TreeNode(object):
                 self._children[action] = TreeNode(self, prob)
 
     # Select步骤，在孩子节点中，选择具有最大行动价值UCT，通过get_value(c_puct)函数得到
-    def select(self, c_puct):
-        # 每次选择最大UCT值的节点，返回(action, next_node)
+    def select(self, actions_available, c_puct):
+        # 每次选择可被选择的节点中最大UCT值的节点，返回(action, next_node)
+        '''
+        node_available = {}
+        for action in actions_available:
+            if action in self._children.keys():
+                node_available[action] = self._children[action]
+        return max(node_available.items(),
+            key=lambda act_node: act_node[1].get_value(c_puct))
+        '''
         return max(self._children.items(),
             key=lambda act_node: act_node[1].get_value(c_puct))
 
@@ -136,19 +149,40 @@ class MCTS(object):
         while(1):
             if node.is_leaf():
                 break
+            '''
             if n==0 :
             # 基于贪心算法 选择下一步
-                action, node = node.select(self._c_puct)
+                action_available = state.get_avaliable()
+                try:
+                    action, node = node.select(action_available, self._c_puct)
+                # action 被选择的节点，是一个string
+                    state.scheduling(action)
+                except:
+                    pass
+                n+=1
+            else:
+                state.job(random_job(state))
+                try:
+                    action, node = node.select(action_available, self._c_puct)
+                # action 被选择的节点，是一个string
+                    state.scheduling(action)
+                except:
+                    pass
+                n+=1
+            '''
+            if n==0 :
+            # 基于贪心算法 选择下一步
+                action_available = state.get_avaliable()
+                action, node = node.select(action_available, self._c_puct)
                 # action 被选择的节点，是一个string
                 state.scheduling(action)
                 n+=1
             else:
                 state.job(random_job(state))
-                action, node = node.select(self._c_puct)
+                action, node = node.select(action_available, self._c_puct)
                 # action 被选择的节点，是一个string
                 state.scheduling(action)
                 n+=1
-
             # 对于current player，根据state 得到一组(action, probability) 和分数v [-1,1]之间（比赛结束时的预期结果）
         action_probs, leaf_value = self._policy(state)
         # 检查游戏是否结束
@@ -171,8 +205,8 @@ class MCTS(object):
             state_now = np.array(state_now)
             state_all = np.array(state_all)
 
-            leaf_value = 1-(np.sum(state_weight * np.square(state_now -
-                                                            state_all) / np.square(state_all)) / np.sum(state_weight))
+            leaf_value = 30 * np.sum(state_weight * np.square(state_now - state_all) / np.square(state_all)) / np.sum(state_weight)
+            #剩的越少越好
             '''
             state_weight 每一项资源的权重系数，是一个array
             state_now    每一项资源的现有量，是一个array
@@ -186,8 +220,13 @@ class MCTS(object):
         state_resource_names = state.get_state_resource_name()
         job = {}
         for resource_name in state_resource_names:
-            job[resource_name] = random.randint(0,10)
-        return job
+            if resource_name != 'gpu':
+                job[resource_name] = random.randint(10,15)
+            else:
+                job[resource_name] = random.randint(0,1)
+        if np.random.random() < 0.1:
+            job['gpu'] += random.randint(5,8)
+        return job 
 
     def get_move_probs(self, state, temp=1e-3):
         # 运行_n_playout次 _playout
@@ -239,8 +278,13 @@ class MCTSPlayer(object):
         state_resource_names = state.get_state_resource_name()
         job = {}
         for resource_name in state_resource_names:
-            job[resource_name] = random.randint(0,10)
-        return job
+            if resource_name != 'gpu':
+                job[resource_name] = random.randint(10,15)
+            else:
+                job[resource_name] = random.randint(0,1)
+        if np.random.random() < 0.1:
+            job['gpu'] += random.randint(5,8)
+        return job 
 
     '''
     def get_action(self, state, temp=1e-3, return_prob=0):
