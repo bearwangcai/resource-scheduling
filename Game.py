@@ -3,14 +3,15 @@ from __future__ import print_function
 import numpy as np
 from node import state as State
 import random
-from select_the_max import node_select_value
+from select_the_max import node_select_value, node_select_value_cos
 #找到jobs的位置 23行
 #应该做两套，一套是自我对弈，job是随机的，另一套是人机对弈，jobs是真实的
 
 class Game(object):
-    def __init__(self, jobs, node_dict):
+    def __init__(self, jobs, node_dict, weight):
         self.jobs = jobs
         self.node_dict = node_dict
+        self.weight = weight
 
     '''
     def random_job(self, state):
@@ -29,7 +30,7 @@ class Game(object):
                 job[resource_name] = random.randint(10,15)
             else:
                 job[resource_name] = random.randint(0,1)
-        if np.random.random() < 0.1:
+        if np.random.random() < 0.3:
             job['gpu'] += random.randint(5,8)
         return job 
 
@@ -73,8 +74,8 @@ class Game(object):
     '''
     def start_self_play(self, player, is_shown=0, temp=1e-3):
         # 初始化棋盘
-        self.state1 = State(self.node_dict)
-        self.state2 = State(self.node_dict)
+        self.state1 = State(self.node_dict, self.weight)
+        self.state2 = State(self.node_dict, self.weight)
         # 记录该局对应的数据：states, mcts_probs, current_players
         jobs = []
         moves1, states1, mcts_probs1 = [], [], []
@@ -102,9 +103,9 @@ class Game(object):
 
                 return jobs, moves1, moves2, credit1, credit2, resourse_last1, resourse_last2
             if not end1:
-                move1, move_probs1 = player.get_action(self.state1)
-                # 存储数据
-                states1.append(self.state1.get_state_resource_now()) #棋盘状态
+                #move1, move_probs1 = player.get_action(self.state1)
+                move1, move_probs1 = node_select_value(self.state1)
+                # 存储数据                states1.append(self.state1.get_state_resource_now()) #棋盘状态
                 mcts_probs1.append(move_probs1)
                 moves1.append(move1)
                 # 按照move来下棋
@@ -117,7 +118,7 @@ class Game(object):
                 #print('move1: ',move1)
                 n1 += 1
             if not end2:
-                move2, move_probs2 = node_select_value(self.state2)
+                move2, move_probs2 = node_select_value_cos(self.state2)
                 states2.append(self.state2.get_state_resource_now()) #棋盘状态
                 mcts_probs2.append(move_probs2)
                 moves2.append(move2)

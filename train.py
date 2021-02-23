@@ -13,19 +13,19 @@ from node import node
 class TrainPipeline():
     def __init__(self, init_model=None):
         # 设置棋盘和游戏的参数
-        self.node1 = node({'cpu':150, 'memory':100, 'gpu':5})
-        self.node2 = node({'cpu':150, 'memory':100, 'gpu':5})
-        self.node3 = node({'cpu':150, 'memory':100, 'gpu':100})
+        self.node1 = node({'cpu':150, 'memory':150, 'gpu':20})
+        self.node2 = node({'cpu':150, 'memory':150, 'gpu':0})
+        self.node3 = node({'cpu':100, 'memory':100, 'gpu':80})
         self.node_dict = {'node1':self.node1, 'node2':self.node2, 'node3':self.node3}
         self.weight = {'cpu':0.3, 'memory':0.2, 'gpu':0.5}
         self.jobs = [{'cpu': 5, 'memory': 2, 'gpu': 1}, {'cpu': 5, 'memory': 2, 'gpu': 0}]
         self.state = State(self.node_dict)
-        self.game = Game(self.jobs, self.node_dict)
+        self.game = Game(self.jobs, self.node_dict, self.weight)
         # 设置训练参数
         self.learn_rate = 2e-3 # 基准学习率
         self.lr_multiplier = 1.0  # 基于KL自动调整学习倍速
         self.temp = 1.0  # 温度参数
-        self.n_playout = 400  # 每下一步棋，模拟的步骤数
+        self.n_playout = 2000  # 每下一步棋，模拟的步骤数
         self.c_puct = 5 # exploitation和exploration之间的折中系数
         self.buffer_size = 10000
         self.batch_size = 512  # mini-batch size for training
@@ -71,7 +71,7 @@ class TrainPipeline():
             for i in range(self.game_batch_num):
                 # 收集自我对弈数据
                 self.collect_selfplay_data(self.play_batch_size)
-                print(self.data_buffer)
+                #print(self.data_buffer)
         except KeyboardInterrupt:
             print('\n\rquit')
 

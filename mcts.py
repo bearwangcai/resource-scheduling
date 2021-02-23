@@ -2,6 +2,7 @@ import numpy as np
 import copy
 import pickle
 import random
+from sklearn.metrics.pairwise import cosine_similarity
 
 # 快速走子策略：随机走子
 
@@ -42,7 +43,7 @@ def node_select_value(state):
 
     if state_avaliable == [] :
         return None, 0
-
+    '''
     for node_name in state_avaliable:
     #node_values:node({'cpu':15, 'memory':10, 'gpu':1})
         state_weight = []
@@ -61,6 +62,28 @@ def node_select_value(state):
         #prob = 1-(np.sum(state_weight * np.square(node_job - node_now) / np.square(node_now)) / np.sum(state_weight)) 节点执行完任务后省的越少越好
         prob = (np.sum(state_weight * np.square(node_job - node_now) / np.square(node_now)) / np.sum(state_weight)) #节点执行完任务后省的越多越好
         action_probs.append(prob)
+        '''
+    for node_name in state_avaliable:
+    #node_values:node({'cpu':15, 'memory':10, 'gpu':1})
+        state_weight = []
+        node_job = []
+        node_now = []
+        node_value = state.get_state_resource_now()[node_name]
+        node_resource_now = node_value.get_node_resource_now()
+        for name in resource_needed.keys():
+            state_weight.append(state.weight()[name])
+            node_now.append(node_resource_now[name])
+            node_job.append(jobs[name])
+        state_weight = np.array(state_weight)
+        node_job = np.array(node_job).reshape(1,-1)
+        node_now = np.array(node_now).reshape(1,-1)
+
+        #prob = 1-(np.sum(state_weight * np.square(node_job - node_now) / np.square(node_now)) / np.sum(state_weight)) 节点执行完任务后省的越少越好
+        #prob = (np.sum(state_weight * np.square(node_job - node_now) / np.square(node_now)) / np.sum(state_weight)) #节点执行完任务后省的越多越好
+        prob = cosine_similarity(node_job, node_now)[0,0]
+        action_probs.append(prob)
+    #action = state_avaliable[np.argmax(action_probs)]
+    #return action, action_probs
     return zip(state_avaliable, action_probs), 0
 
 
@@ -138,14 +161,14 @@ class MCTS(object):
 
     # 从根节点到叶节点运行每一个playout，获取叶节点的值（胜负平结果1，-1,0），并通过其父节点将其传播回来
     # 状态是就地修改的，所以需要保存副本
-    def _playout(self, state):
+    def _playout(self, state, n):
         # 设置当前节点
         node = self._root
         # 统计资源都有什么
         state_resource_all = state.all()
         state_all_resource_name = state_resource_all.keys() #资源名称，应该是个list
         # 必须要走到叶子节点
-        n=0
+        n_=0
         while(1):
             if node.is_leaf():
                 break
@@ -170,19 +193,19 @@ class MCTS(object):
                     pass
                 n+=1
             '''
-            if n==0 :
+            if n_==0 :
             # 基于贪心算法 选择下一步
                 action_available = state.get_avaliable()
                 action, node = node.select(action_available, self._c_puct)
                 # action 被选择的节点，是一个string
                 state.scheduling(action)
-                n+=1
+                n_+=1
             else:
                 state.job(random_job(state))
                 action, node = node.select(action_available, self._c_puct)
                 # action 被选择的节点，是一个string
                 state.scheduling(action)
-                n+=1
+                n_+=1
             # 对于current player，根据state 得到一组(action, probability) 和分数v [-1,1]之间（比赛结束时的预期结果）
         action_probs, leaf_value = self._policy(state)
         # 检查游戏是否结束
@@ -205,7 +228,7 @@ class MCTS(object):
             state_now = np.array(state_now)
             state_all = np.array(state_all)
 
-            leaf_value = 30 * np.sum(state_weight * np.square(state_now - state_all) / np.square(state_all)) / np.sum(state_weight)
+            leaf_value = 1 * np.sum(state_weight * np.square(state_now - state_all) / np.square(state_all)) / np.sum(state_weight)
             #剩的越少越好
             '''
             state_weight 每一项资源的权重系数，是一个array
@@ -234,10 +257,13 @@ class MCTS(object):
             # 在进行_playout之前需要保存当前状态的副本，因为状态是就地修改的
             state_copy = copy.deepcopy(state)
             #state_copy.job(self.random_job(state_copy))
-            self._playout(state_copy)
+            self._playout(state_copy,n)
+            #print(n)
 
         # 基于节点的访问次数，计算move probabilities
         act_visits = [(act, node._n_visits) for act, node in self._root._children.items()]
+        # 基于节点的_Q值，计算move probabilities
+        #act_visits = [(act, node._Q) for act, node in self._root._children.items()]
         acts, visits = zip(*act_visits)
         # 基于节点的访问次数，通过softmax计算概率
         act_probs = self.softmax(1.0/temp * np.log(np.array(visits) + 1e-10))
@@ -323,8 +349,8 @@ class MCTSPlayer(object):
         sensible_moves = state.get_avaliable()
         if len(sensible_moves) > 0:
             actions, probs = self.mcts.get_move_probs(state)
-            self.mcts.update_with_move(-1)
             action = actions[np.argmax(probs)]
+            self.mcts.update_with_move(actions)
             return action, probs
         else:
             print("WARNING: the state is full")
