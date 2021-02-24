@@ -12,10 +12,13 @@ def random_job(state):
     job = {}
     for resource_name in state_resource_names:
         if resource_name != 'gpu':
-            job[resource_name] = random.randint(10,15)
+            job[resource_name] = random.randint(5,8)
+        
         else:
-            job[resource_name] = random.randint(0,1)
-    if np.random.random() < 0.1:
+            #job[resource_name] = random.randint(0,1)
+            job[resource_name] = 0
+        
+    if np.random.random() < 0.2:
         job['gpu'] += random.randint(5,8)
     return job
 
@@ -137,8 +140,10 @@ class TreeNode(object):
     # 计算节点价值 UCT值 = Q值 + 调整后的访问次数（exploitation + exploration）
     def get_value(self, c_puct):
         # 计算调整后的访问次数
-        self._u = (c_puct * self._P * np.sqrt(self._parent._n_visits) / (1 + self._n_visits))
-        return self._Q + self._u
+        #self._u = (c_puct * self._P * np.sqrt(self._parent._n_visits) / (1 + self._n_visits))
+        #return self._Q + self._u
+        self._u = (c_puct * np.sqrt(self._parent._n_visits) / (1 + self._n_visits))
+        return self._Q + self._u + self._P
 
     # 判断是否为叶子节点
     def is_leaf(self):
@@ -239,17 +244,6 @@ class MCTS(object):
         # 将子节点的评估值反向传播更新父节点(所有)
         node.update_recursive(leaf_value)
 
-    def random_job(self, state):
-        state_resource_names = state.get_state_resource_name()
-        job = {}
-        for resource_name in state_resource_names:
-            if resource_name != 'gpu':
-                job[resource_name] = random.randint(10,15)
-            else:
-                job[resource_name] = random.randint(0,1)
-        if np.random.random() < 0.1:
-            job['gpu'] += random.randint(5,8)
-        return job 
 
     def get_move_probs(self, state, temp=1e-3):
         # 运行_n_playout次 _playout
@@ -300,17 +294,6 @@ class MCTSPlayer(object):
         
 
 
-    def random_job(self, state):
-        state_resource_names = state.get_state_resource_name()
-        job = {}
-        for resource_name in state_resource_names:
-            if resource_name != 'gpu':
-                job[resource_name] = random.randint(10,15)
-            else:
-                job[resource_name] = random.randint(0,1)
-        if np.random.random() < 0.1:
-            job['gpu'] += random.randint(5,8)
-        return job 
 
     '''
     def get_action(self, state, temp=1e-3, return_prob=0):
@@ -350,7 +333,7 @@ class MCTSPlayer(object):
         if len(sensible_moves) > 0:
             actions, probs = self.mcts.get_move_probs(state)
             action = actions[np.argmax(probs)]
-            self.mcts.update_with_move(actions)
+            self.mcts.update_with_move(action)
             return action, probs
         else:
             print("WARNING: the state is full")

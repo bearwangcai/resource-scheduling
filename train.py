@@ -13,9 +13,9 @@ from node import node
 class TrainPipeline():
     def __init__(self, init_model=None):
         # 设置棋盘和游戏的参数
-        self.node1 = node({'cpu':150, 'memory':150, 'gpu':20})
-        self.node2 = node({'cpu':150, 'memory':150, 'gpu':0})
-        self.node3 = node({'cpu':100, 'memory':100, 'gpu':80})
+        self.node1 = node({'cpu':20, 'memory':20, 'gpu':10})
+        self.node2 = node({'cpu':20, 'memory':20, 'gpu':0})
+        self.node3 = node({'cpu':50, 'memory':50, 'gpu':50})
         self.node_dict = {'node1':self.node1, 'node2':self.node2, 'node3':self.node3}
         self.weight = {'cpu':0.3, 'memory':0.2, 'gpu':0.5}
         self.jobs = [{'cpu': 5, 'memory': 2, 'gpu': 1}, {'cpu': 5, 'memory': 2, 'gpu': 0}]
@@ -25,8 +25,8 @@ class TrainPipeline():
         self.learn_rate = 2e-3 # 基准学习率
         self.lr_multiplier = 1.0  # 基于KL自动调整学习倍速
         self.temp = 1.0  # 温度参数
-        self.n_playout = 2000  # 每下一步棋，模拟的步骤数
-        self.c_puct = 5 # exploitation和exploration之间的折中系数
+        self.n_playout = 1000  # 每下一步棋，模拟的步骤数
+        self.c_puct = 1 # exploitation和exploration之间的折中系数
         self.buffer_size = 10000
         self.batch_size = 512  # mini-batch size for training
         self.data_buffer = deque(maxlen=self.buffer_size) #使用 deque 创建一个双端队列
@@ -48,18 +48,22 @@ class TrainPipeline():
     def collect_selfplay_data(self, n_games=1):
         for i in range(n_games):
             # 与MCTS Player进行对弈
-            jobs, moves1, moves2, credit1, credit2, resourse_last1, resourse_last2  = self.game.start_self_play(self.mcts_player, temp=self.temp)
+            jobs, moves1, moves2, credit1, credit2, credit3, resourse_last1, resourse_last2, resourse_last3  = self.game.start_self_play(self.mcts_player, temp=self.temp)
             job_dealed_by_algorithm = len(moves1)
-            job_dealed_by_trandition = len(moves2)
-            a_win_t_by_job = job_dealed_by_algorithm - job_dealed_by_trandition
-            a_win_t_by_credit = credit1 - credit2
-            print('i: ', i)
+            job_dealed_by_max = len(moves2)
+            job_dealed_by_cos = len(moves2)
+            #a_win_t_by_job = job_dealed_by_algorithm - job_dealed_by_trandition
+            #a_win_t_by_credit = credit1 - credit2
+            #print('i: ', i)
             print('job_dealed_by_algorithm: ', job_dealed_by_algorithm)
-            print('job_dealed_by_trandition: ', job_dealed_by_trandition)
+            print('job_dealed_by_max: ', job_dealed_by_max)
+            print('job_dealed_by_cos: ', job_dealed_by_cos)
+            '''
             print('resourse_last1: ', resourse_last1)
             print('resourse_last2: ', resourse_last2)
             print('a_win_t_by_job: ', a_win_t_by_job)
             print('a_win_t_by_credit: ', a_win_t_by_credit)
+            '''
             # 增加数据 play_data
             self.data_buffer.extend(moves1)
             
@@ -70,6 +74,7 @@ class TrainPipeline():
             # 训练game_batch_num次，每个batch比赛play_batch_size场
             for i in range(self.game_batch_num):
                 # 收集自我对弈数据
+                print(i)
                 self.collect_selfplay_data(self.play_batch_size)
                 #print(self.data_buffer)
         except KeyboardInterrupt:
