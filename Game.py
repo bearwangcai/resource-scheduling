@@ -37,7 +37,7 @@ class Game(object):
     '''
 
     
-    def start_self_play(self, player, is_shown=0, temp=1e-3):
+    def start_self_play(self, player, is_shown=0):
         # 初始化棋盘
         self.state1 = State(self.node_dict, self.weight)
         self.state2 = State(self.node_dict, self.weight)

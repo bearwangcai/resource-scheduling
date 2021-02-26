@@ -123,6 +123,12 @@ class state:
                 node_keys.append(node_key)
         return node_keys
 
+    def get_resource_node_name(self):
+        '''
+        返回全部资源节点名称
+        '''
+        return self.state_resource_now.keys()
+
     def game_end(self):
         node_keys = self.get_avaliable()
         return True if node_keys==[] else False
