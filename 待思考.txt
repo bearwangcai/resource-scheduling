@@ -20,3 +20,8 @@ mcts中的get_move_probs，选择节点的概率是通过被选择次数还是�
 6.在执行先跑cos的select_max方式，取得job数，leaf值
 mcts:node:update,get_value
 
+资源节点的资源含GPU的越大越好
+包含多种异构资源的会不会更好
+job最好先是一些不包含异构资源的大资源job，然后再是含异构资源的
+效果好的原因可能是资源到达本身就有一定的概率特点，例如先是一些不包含异构资源的，先到达的job资源消耗比较大等等（random_job函数要认真写）
+
