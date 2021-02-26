@@ -19,7 +19,7 @@ def random_job(state):
             #job[resource_name] = random.randint(0,1)
             job[resource_name] = 0
         
-    if np.random.random() < 0.1:#按比例越小越明显，但不宜太小，否则有可能不生成含gpu任务
+    if np.random.random() < 0.2:#按比例越小越明显，但不宜太小，否则有可能不生成含gpu任务
         job['gpu'] += random.randint(5,8)
     return job
 

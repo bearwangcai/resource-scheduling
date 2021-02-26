@@ -1,5 +1,9 @@
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import pickle
+f = open(r'.\temp.pkl', 'wb') 
+pickle.dump(1,f)
+f.close()
 
 '''
 state_weight = np.array([0.3,0.2,0.5])

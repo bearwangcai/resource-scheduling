@@ -9,10 +9,10 @@ from mcts import random_job
 #应该做两套，一套是自我对弈，job是随机的，另一套是人机对弈，jobs是真实的
 
 class Game(object):
-    def __init__(self, jobs, node_dict, weight):
-        self.jobs = jobs
+    def __init__(self, node_dict, weight, jobs = None):
         self.node_dict = node_dict
         self.weight = weight
+        self.jobs = jobs
 
     '''
     def random_job(self, state):
@@ -43,7 +43,8 @@ class Game(object):
         self.state2 = State(self.node_dict, self.weight)
         self.state3 = State(self.node_dict, self.weight)
         # 记录该局对应的数据：states, mcts_probs, current_players
-        jobs = []
+        if self.jobs == None:
+            self.jobs = []
         moves1, states1, mcts_probs1 = [], [], []
         moves2, states2, mcts_probs2 = [], [], []
         moves3, states3, mcts_probs3 = [], [], []
@@ -54,10 +55,10 @@ class Game(object):
         while True:
             # 得到player的下棋位置
             # 加入job
-            jobs.append(random_job(self.state1))
-            self.state1.job(jobs[-1])
-            self.state2.job(jobs[-1])
-            self.state3.job(jobs[-1])
+            self.jobs.append(random_job(self.state1))
+            self.state1.job(self.jobs[-1])
+            self.state2.job(self.jobs[-1])
+            self.state3.job(self.jobs[-1])
             end1 = self.state1.game_end()
             end2 = self.state2.game_end()
             end3 = self.state3.game_end()
@@ -73,7 +74,7 @@ class Game(object):
                 credit3 = self.get_algorithm_credit(self.state3)#返回该局得分
 
 
-                return jobs, moves1, moves2, credit1, credit2, credit3, resourse_last1, resourse_last2, resourse_last3
+                return self.jobs, moves1, moves2, credit1, credit2, credit3, resourse_last1, resourse_last2, resourse_last3
             if not end1:
                 move1, move_probs1 = player.get_action(self.state1)
                 #move1, move_probs1 = node_select_value(self.state1)
