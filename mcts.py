@@ -4,24 +4,10 @@ import pickle
 import random
 from sklearn.metrics.pairwise import cosine_similarity
 from select_the_max import node_select_value_cos
+from random_job import random_job
 
 # 快速走子策略：随机走子
 
-
-def random_job(state):
-    state_resource_names = state.get_state_resource_name()
-    job = {}
-    for resource_name in state_resource_names:
-        if ((resource_name == 'cpu') or (resource_name == 'memory')):
-            job[resource_name] = random.randint(5,8)
-        
-        else:
-            #job[resource_name] = random.randint(0,1)
-            job[resource_name] = 0
-        
-    if np.random.random() < 0.2:#按比例越小越明显，但不宜太小，否则有可能不生成含gpu任务
-        job['gpu'] += random.randint(5,8)
-    return job
 
 def rollout_policy_fn(state):
     state_avaliable = state.get_avaliable()
@@ -171,7 +157,7 @@ class MCTS(object):
 
     # 从根节点到叶节点运行每一个playout，获取叶节点的值（胜负平结果1，-1,0），并通过其父节点将其传播回来
     # 状态是就地修改的，所以需要保存副本
-    def _playout(self, state, n):
+    def _playout(self, state, n, n_job, n_job_thread, probability_1, probability_2):
         # 设置当前节点
         node = self._root
         state_contrast = copy.deepcopy(state)
@@ -179,6 +165,8 @@ class MCTS(object):
         state_resource_all = state.all()
         state_all_resource_name = state_resource_all.keys() #资源名称，应该是个list
         job_list = []
+        action_algorithm_list = []
+        action_cos_list = []
         # 必须要走到叶子节点
         n_=0
         while(1):
@@ -212,9 +200,10 @@ class MCTS(object):
                 action, node = node.select(action_available, self._c_puct)
                 # action 被选择的节点，是一个string
                 state.scheduling(action)
+                action_algorithm_list.append(action)
                 n_+=1
             else:
-                job_list.append(random_job(state))
+                job_list.append(random_job(state, n_job + n_, n_job_thread, probability_1, probability_2))
                 state.job(job_list[-1])
                 end = state.game_end()
                 if end:
@@ -224,6 +213,7 @@ class MCTS(object):
                     action, node = node.select(action_available, self._c_puct)
                     # action 被选择的节点，是一个string
                     state.scheduling(action)
+                    action_algorithm_list.append(action)
                     n_+=1
             # 对于current player，根据state 得到一组(action, probability) 和分数v [-1,1]之间（比赛结束时的预期结果）
         action_probs, leaf_value = self._policy(state)
@@ -241,15 +231,17 @@ class MCTS(object):
                 else:
                     move_contrast, move_probs_contrast = node_select_value_cos(state_contrast)
                     state_contrast.scheduling(move_contrast)
+                    action_cos_list.append(move_contrast)
                     n_contrast += 1
             while 1:
-                job_list.append(random_job(state_contrast))
+                job_list.append(random_job(state_contrast, n_job + n_contrast, n_job_thread, probability_1, probability_2))
                 state_contrast.job(job_list[-1])
                 if state_contrast.game_end():
                     break
                 else:
                     move_contrast, move_probs_contrast = node_select_value_cos(state_contrast)
                     state_contrast.scheduling(move_contrast)
+                    action_cos_list.append(move_contrast)
                     n_contrast += 1                    
             leaf_value = n_ - n_contrast
             
@@ -282,13 +274,13 @@ class MCTS(object):
         node.update_recursive(leaf_value)
 
 
-    def get_move_probs(self, state, temp=1e-3):
+    def get_move_probs(self, state, n_job, n_job_thread, probability_1, probability_2, temp=1e-3):
         # 运行_n_playout次 _playout
         for n in range(self._n_playout):
             # 在进行_playout之前需要保存当前状态的副本，因为状态是就地修改的
             state_copy = copy.deepcopy(state)
             #state_copy.job(self.random_job(state_copy))
-            self._playout(state_copy,n)
+            self._playout(state_copy, n, n_job, n_job_thread, probability_1, probability_2)
             #print(n)
 
         # 基于节点的访问次数，计算move probabilities
@@ -365,10 +357,10 @@ class MCTSPlayer(object):
         else:
             print("WARNING: the board is full")
     '''
-    def get_action(self, state):
+    def get_action(self, state, n_job, n_job_thread, probability_1, probability_2):
         end = state.game_end()
         if not end:
-            actions, probs = self.mcts.get_move_probs(state)
+            actions, probs = self.mcts.get_move_probs(state, n_job, n_job_thread, probability_1, probability_2)
             action = actions[np.argmax(probs)]
             self.mcts.update_with_move(action)
             return action, probs

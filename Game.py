@@ -4,7 +4,7 @@ import numpy as np
 from node import state as State
 import random
 from select_the_max import node_select_value, node_select_value_cos
-from mcts import random_job
+from random_job import random_job
 #找到jobs的位置 23行
 #应该做两套，一套是自我对弈，job是随机的，另一套是人机对弈，jobs是真实的
 
@@ -37,7 +37,7 @@ class Game(object):
     '''
 
     
-    def start_self_play(self, player, is_shown=0):
+    def start_self_play(self, player, n_job_thread, probability_1, probability_2, is_shown=0):
         # 初始化棋盘
         self.state1 = State(self.node_dict, self.weight)
         self.state2 = State(self.node_dict, self.weight)
@@ -55,7 +55,7 @@ class Game(object):
         while True:
             # 得到player的下棋位置
             # 加入job
-            self.jobs.append(random_job(self.state1))
+            self.jobs.append(random_job(self.state1, n1, n_job_thread, probability_1, probability_2))
             self.state1.job(self.jobs[-1])
             self.state2.job(self.jobs[-1])
             self.state3.job(self.jobs[-1])
@@ -63,20 +63,21 @@ class Game(object):
             end2 = self.state2.game_end()
             end3 = self.state3.game_end()
             if end1 and end2 and end3:
-                resourse_last1 = self.state1.now()
-                credit1 = self.get_algorithm_credit(self.state1)#返回该局得分
+                #resourse_last1 = self.state1.now()
+                #credit1 = self.get_algorithm_credit(self.state1)#返回该局得分
                 player.reset_player()
 
-                resourse_last2 = self.state2.now()
-                credit2 = self.get_algorithm_credit(self.state2)#返回该局得分
+                #resourse_last2 = self.state2.now()
+                #credit2 = self.get_algorithm_credit(self.state2)#返回该局得分
 
-                resourse_last3 = self.state3.now()
-                credit3 = self.get_algorithm_credit(self.state3)#返回该局得分
+                #resourse_last3 = self.state3.now()
+                #credit3 = self.get_algorithm_credit(self.state3)#返回该局得分
 
 
-                return self.jobs, moves1, moves2, credit1, credit2, credit3, resourse_last1, resourse_last2, resourse_last3
+                #return self.jobs, moves1, moves2, moves3, credit1, credit2, credit3, resourse_last1, resourse_last2, resourse_last3
+                return self.jobs, moves1, moves2, moves3
             if not end1:
-                move1, move_probs1 = player.get_action(self.state1)
+                move1, move_probs1 = player.get_action(self.state1, n1, n_job_thread, probability_1, probability_2)
                 #move1, move_probs1 = node_select_value(self.state1)
                 # 存储数据                states1.append(self.state1.get_state_resource_now()) #棋盘状态
                 mcts_probs1.append(move_probs1)

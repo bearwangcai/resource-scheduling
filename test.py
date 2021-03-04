@@ -1,11 +1,25 @@
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import pickle
+
+f = open((r'D:\科研\论文\High effient resource scheduling for cloud based on modified MCTS\programing\parameter') + 'c_puct'+ str(0.03) + 'n_job_thread' +str(0) +'.pkl','rb')
+a = pickle.load(f)
+print(a)
+'''
+for c_puct in [0.03,0.3,3]:
+    for n_job_thread in [0,6,12]:
+        path = (r'D:\科研\论文\High effient resource scheduling for cloud based on modified MCTS\programing\parameter') + 'c_puct'+ str(c_puct) + 'n_job_thread' +str(n_job_thread) +'.pkl' 
+        f = open(path, "wb")
+        pickle.dump(1, f)
+        print(path)
+
+
+result = {'1':{(0,1):1}}
 f = open(r'.\temp.pkl', 'wb') 
-pickle.dump(1,f)
+pickle.dump(result,f)
 f.close()
 
-'''
+
 state_weight = np.array([0.3,0.2,0.5])
 node_job = np.array([10,10,1]).reshape(1,-1)
 #nodes_now = [np.array([100,100,10]).reshape(1,-1),np.array([100,100,10]).reshape(1,-1),np.array([100,100,100]).reshape(1,-1)]
