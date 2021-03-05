@@ -20,6 +20,11 @@ class TrainPipeline():
         self.node2 = node({'cpu':20, 'memory':20, 'gpu':0})
         self.node3 = node({'cpu':50, 'memory':50, 'gpu':50})
         self.node_dict = {'node1':self.node1, 'node2':self.node2, 'node3':self.node3}
+        self.data_name = 'gpu'
+        self.c_puct_list = [0.03,0.3,3]
+        self.n_job_thread_list = [0,5]
+        self.probability_1_list = [0,0.03,0.3]
+        self.probability_2_list = [0.3,0.6,0.9]
         '''
         self.node1 = node({'cpu':30, 'memory':30, 'gpu':30, 'fpga':0})
         self.node2 = node({'cpu':30, 'memory':30, 'gpu':0, 'fpga':30})
@@ -28,6 +33,11 @@ class TrainPipeline():
         self.node5 = node({'cpu':30, 'memory':30, 'gpu':0, 'fpga':0})
         #按比例应该是越大越明显
         self.node_dict = {'node1':self.node1, 'node2':self.node2, 'node3':self.node3, 'node4':self.node4, 'node5':self.node5}
+        self.data_name = 'fpga_gpu'
+        self.c_puct_list = [0.03,0.3,3]
+        self.n_job_thread_list = [0,5]
+        self.probability_1_list = [0,0.03,0.3]
+        self.probability_2_list = [0.3,0.6,0.9]
         '''
 
         #self.weight = {'cpu':0.3, 'memory':0.2, 'gpu':0.5}
@@ -55,11 +65,11 @@ class TrainPipeline():
         result['job_dealed_by_max'] = {}
         result['job_dealed_by_cos'] = {}
         epoc = 1
-        for self.c_puct in [0.03,0.3,3]:
-            for self.n_job_thread in [0,5]:
-                self.path = (r'D:\科研\论文\High effient resource scheduling for cloud based on modified MCTS\programing\parameter_check_on_standard') + 'c_puct'+ str(0.03) + 'n_job_thread' +str(0) +'.pkl'
-                for self.probability_1 in [0,0.03,0.3]:
-                    for self.probability_2 in [0.3,0.6,0.9]:
+        for self.c_puct in self.c_puct_list:
+            for self.n_job_thread in self.n_job_thread_list:
+                self.path = (r'D:\科研\论文\High effient resource scheduling for cloud based on modified MCTS\programing\parameter_check_on_') + self.data_name + 'c_puct'+ str(self.c_puct) + 'n_job_thread' +str(self.n_job_thread) +'.pkl'
+                for self.probability_1 in self.probability_1_list:
+                    for self.probability_2 in self.probability_2_list:
         #for self.c_puct in [0.01]:
         # 训练game_batch_num次，每个batch比赛play_batch_size场
                         for i in range(self.game_batch_num):
