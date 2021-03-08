@@ -15,16 +15,16 @@ class TrainPipeline():
     def __init__(self, init_model=None):
         # 设置棋盘和游戏的参数
         
-        '''
+        
         self.node1 = node({'cpu':20, 'memory':20, 'gpu':0})
         self.node2 = node({'cpu':20, 'memory':20, 'gpu':0})
         self.node3 = node({'cpu':50, 'memory':50, 'gpu':50})
         self.node_dict = {'node1':self.node1, 'node2':self.node2, 'node3':self.node3}
-        self.data_name = 'gpu'
-        self.c_puct_list = [0.03,0.3,3]
-        self.n_job_thread_list = [0,5]
-        self.probability_1_list = [0,0.03,0.3]
-        self.probability_2_list = [0.3,0.6,0.9]
+        self.data_name = 'ideal'
+        self.c_puct_list = [3]
+        self.n_job_thread_list = [4]
+        self.probability_1_list = [0]
+        self.probability_2_list = [1]
         '''
         self.node1 = node({'cpu':30, 'memory':30, 'gpu':30, 'fpga':0})
         self.node2 = node({'cpu':30, 'memory':30, 'gpu':0, 'fpga':30})
@@ -38,7 +38,7 @@ class TrainPipeline():
         self.n_job_thread_list = [0,5]
         self.probability_1_list = [0,0.03,0.3]
         self.probability_2_list = [0.3,0.6,0.9]
-        
+        '''
 
         #self.weight = {'cpu':0.3, 'memory':0.2, 'gpu':0.5}
         self.weight = None

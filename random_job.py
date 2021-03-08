@@ -1,5 +1,6 @@
 import numpy as np
 import random
+"""
 def random_job(state, n_job, n_job_thread = 0, probability_1 = 0, probability_2 = 0.2):
     '''
     state:分配状态
@@ -32,7 +33,7 @@ def random_job(state, n_job, n_job_thread = 0, probability_1 = 0, probability_2 
                     
     return job
 """
-理想化测试版
+#理想化测试版
 def random_job(state, n_job, n_job_thread = 0, probability_1 = 0, probability_2 = 0.2):
     '''
     state:分配状态
@@ -64,4 +65,3 @@ def random_job(state, n_job, n_job_thread = 0, probability_1 = 0, probability_2 
                     #job[resource_name] += random.randint(5,8)
                     job[resource_name] += 10
     return job
-"""
