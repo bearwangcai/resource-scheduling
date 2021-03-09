@@ -21,7 +21,7 @@ def show(MCTS, maximum):
     ax.xaxis.set_major_locator(x_major_locator)
     #把x轴的主刻度设置为1的倍数
     ax.yaxis.set_major_locator(y_major_locator)
-    plt.savefig(r'D:\科研\论文\High effient resource scheduling for cloud based on modified MCTS\programing\experiment.png',dpi=500)
+    plt.savefig(r'D:\科研\论文\High effient resource scheduling for cloud based on modified MCTS\programing\experiment.tif',dpi=500)
     #plt.title('')
     plt.show()
 
